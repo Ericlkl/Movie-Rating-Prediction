@@ -19,8 +19,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Import dataset
-rating_dataset = pd.read_csv("ratings.csv")
-movies_dataset = pd.read_csv("movies.csv")
+rating_dataset = pd.read_csv("./data/ratings.csv")
+movies_dataset = pd.read_csv("./data/movies.csv")
 
 # Set the index by movieId, This line of code only able to execute once
 movies_dataset.set_index('movieId', inplace = True)
