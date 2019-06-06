@@ -45,7 +45,7 @@ def get_tags_df():
 
 def generate_full_df():
     # Import dataset
-    rating_df = pd.read_csv("./data/ratings.csv")
+    rating_df = generate_rating_df_With_avg_rating()
     
     movie_df = convert_dummy_movie_df()
     tags_df = get_tags_df()
@@ -88,3 +88,15 @@ def generate_user_avg_rating_df():
         df = df.append( pd.Series(row_values), ignore_index = True )
     df[['userId']] = df[['userId']].astype(int)
     return df.fillna(0)
+
+# DataFrame for Naive Bayes Algorithm 
+# DataFrame ratings LEFTJOIN movies LEFTJOIN tags
+def generate_NB_df():
+    rating_df = pd.read_csv("./data/ratings.csv").drop(columns=["timestamp"], axis=1)
+    movie_df = convert_dummy_movie_df()
+    tags_df = get_tags_df()
+
+    df = pd.merge(rating_df, movie_df, on = 'movieId', how = "left")
+    df = pd.merge(df, tags_df, on = 'movieId', how = "left").fillna(0)
+
+    return df
