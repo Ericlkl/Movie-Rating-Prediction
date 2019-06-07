@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # ## CAB420 Final Assignment
-# 
+# ### Author: KA LONG LEE ( N9845097 )
 
 # # Importing Library and Read Data from CSV files
 # 
@@ -17,179 +17,157 @@ import random
 
 # Spliting data to trainning and testing set
 from sklearn.model_selection import train_test_split
-# Fitting Multiple Linear Regression to the trainning set
-from sklearn.linear_model import LinearRegression
 
-from sklearn.metrics import mean_squared_error, r2_score
+# Matplotlib setting 
+get_ipython().run_line_magic('config', "InlineBackend.print_figure_kwargs = {'bbox_inches':None}")
+get_ipython().run_line_magic('config', "InlineBackend.rc = {'font.size': 30, 'figure.figsize': (30.0, 20.0), 'figure.facecolor': (1, 1, 1, 0), 'figure.subplot.bottom': 0.125, 'figure.edgecolor': (1, 1, 1, 0), 'figure.dpi': 500}")
 
-# Import dataset
-rating_dataset = pd.read_csv("ratings.csv")
-movies_dataset = pd.read_csv("movies.csv")
 
-# Set the index by movieId, This line of code only able to execute once
-movies_dataset.set_index('movieId', inplace = True)
-
-# Convert genres to dummy variable dataset
-genresDummy = movies_dataset['genres'].str.get_dummies(sep='|')
-
+# ## Data Preprocessing
 
 # In[2]:
 
 
-# Get all the genres values from the dataset
-def get_all_genres():
-    # a variable contains all the genre types
-    genres = list()
+from dataset import convert_dummy_movie_df, generate_rating_df_With_avg_rating 
+from dataset import get_tags_df, generate_full_df, generate_user_avg_rating_df, generate_NB_df
 
-    for row in movies_dataset.values:
-        #  Sperating the genre by |
-        Typestemp = row[1].split('|')
-        #  Read all these type and put it to list
-        for movietype in Typestemp:
-            genres.append(movietype)
-    return set(genres)
 
+# ## Movie Dataframe
 
 # In[3]:
 
 
-# Add the dummy data back to the dataset
-for genre in get_all_genres():
-    movies_dataset[genre] = genresDummy[genre]
-    
-# Cannot use year as parameter because in movie 3xxxx there is a movie does not have years
-# movies_dataset["year"] = movies_dataset["title"].str.extract(r"\(([0-9]+)\)").astype(dtype=np.int)
+movie_df = convert_dummy_movie_df();
+movie_df.head()
 
-# Filtering duplicate values in the MovieGenre list
-movies_dataset = movies_dataset.drop(columns=['genres', 'title',"(no genres listed)","Western","IMAX"], axis=1)
 
-movies_dataset
-
+# ## Rating Dataframe
 
 # In[4]:
 
 
-full_rating_dataset = pd.merge(rating_dataset[["userId","movieId","rating"]], movies_dataset, on = 'movieId', how = "left")
-full_rating_dataset
+rating_df = generate_rating_df_With_avg_rating();
+rating_df.head()
 
 
-# ## Linear Regression for Predicting a user how many marks will he/she giving to a movie according to he/she previous rating to other movie and the others how they rate this movie
-# 
+# ## Tags Dataframe
 
 # In[5]:
 
 
-X = full_rating_dataset.drop(columns=['rating'], axis=1).values
-y = full_rating_dataset.iloc[:,2].values
+tags_df = get_tags_df()
+tags_df.head()
 
-X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.2, random_state = 0)
 
-regressor = LinearRegression()
-regressor.fit(X_train,y_train)
-
-y_pred = regressor.predict(X_test)
-
+# ## Full information Dataset (rating + tags + movies)
 
 # In[6]:
 
 
-y_pred
+full_rating_dataset = generate_full_df()
+full_rating_dataset
 
 
-# In[7]:
+# ## Random Forest Algorithm
+
+# In[16]:
 
 
-y_test
+from sklearn.utils import shuffle
+full_rating_dataset = shuffle(full_rating_dataset)
 
+from RandomForest import Random_Forest_Prediction
+
+X = full_rating_dataset.drop(columns=['rating'], axis=1).values
+y = full_rating_dataset.loc[:,'rating'].astype(str).values
+
+# Currently n_estimator is set to 100, it takes a long time to train the classifier
+# If you are using a normal computer, you can set the n_estimator to 20 to make the trainning faster
+# However, the accurarcy will reduce a little bit
+
+Random_Forest_Prediction(X,y,100)
+
+
+# ## Naive Bayes Gaussian Models
 
 # In[8]:
 
 
-# The coefficients
-print('Coefficients: \n', regressor.coef_)
-# The mean squared error
-print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
-# Explained variance score: 1 is perfect prediction
-print('Variance score: %.2f' % r2_score(y_test, y_pred))
+df = generate_NB_df()
+
+df.head()
 
 
 # In[9]:
 
 
-# Add 1 to Xtrain represent parameter0
-X_train = np.append(arr = np.ones(( X_train.shape[0],1 )), values = X_train, axis = 1)
+from NaiveBayes import Naive_Bayes_Gaussian_Prediction
+X = df.drop(columns=['rating'], axis=1).values
+y = df['rating'].astype(str).values
 
+Naive_Bayes_Gaussian_Prediction(X,y,0.2)
+
+
+# # K-Means Algorithm Clustering Similar Movies
 
 # In[10]:
 
 
-X_opt = X_train[:,:]
+# The dataset will use in this case
+movie_df.iloc[:,1:-3].head()
 
-# Backward Elimination
-import statsmodels.api as smf
+movie_df
 
-regressor_OLS = smf.OLS(endog= y_train, exog= X_opt).fit()
-regressor_OLS.summary()
-
-
-# ## Linear Regression for predicting a user will rate to a new movies according to the previous rating he gave to the other movies only
 
 # In[11]:
 
 
-# Randomly Generate a user for doing linear regression to predict what will he / she giving the rating on a movie
-userID = random.randint(1, full_rating_dataset['userId'].max() + 1)
+from Kmeans import KMeans_SSE_Graphic, KMeans_Cluster
 
-rating_df_for_one_user = full_rating_dataset.loc[(full_rating_dataset.userId == userID)]
+# X only contains movie genres values
+X = movie_df.iloc[:,1:-3].values
 
-X = rating_df_for_one_user.drop(columns=['rating','userId'], axis=1).values
-y = rating_df_for_one_user.iloc[:,2].values
+KMeans_SSE_Graphic(X,50,"Movies")
 
-X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.2, random_state = 0)
 
-regressor = LinearRegression()
-regressor.fit(X_train,y_train)
-
-y_pred = regressor.predict(X_test)
-y_pred
-
+# ## We Can see the result from the graph. The numbers of Inertias are dramatically decreased when k= 1 to k = 20, from 16000 to 6000. Then it becomes slow, from 6000 to 4000 when k = 21 to k=50. number of optimal cluster is K = 20 in this case
+# 
 
 # In[12]:
 
 
-y_test
+KMeans_Cluster(movie_df,X,20,"./data/KMeans_Movies_Cluster.csv")
 
+
+# ## Hierarchy Clustering Similar Users
+# 
+
+# We need to create a new dataframe from the full rating dataset
+# The new dataframe should contains all the average rating the user previous rating for all the genre
 
 # In[13]:
 
 
-# The coefficients
-print('Coefficients: \n', regressor.coef_)
-# The mean squared error
-print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
-# Explained variance score: 1 is perfect prediction
-print('Variance score: %.2f' % r2_score(y_test, y_pred))
+get_ipython().run_line_magic('matplotlib', 'inline')
+from Hierarchy_Clustering import HC_cluster_user, draw_user_dendrogram
+
+mergings = draw_user_dendrogram()
 
 
 # In[14]:
 
 
-# Add 1 to Xtrain represent parameter0
-X_train = np.append(arr = np.ones(( X_train.shape[0],1 )), values = X_train, axis = 1)
+X = generate_user_avg_rating_df().iloc[:,1:].values
 
-X_opt = X_train[:,:]
+KMeans_SSE_Graphic(X,50,"Users")
 
-# Backward Elimination
-import statsmodels.api as smf
 
-regressor_OLS = smf.OLS(endog= y_train, exog= X_opt).fit()
-regressor_OLS.summary()
-
+# ## From the Grpah above, We can see that the dramatic decrease stop around cluster = 14, So we use 14 to cluster the user group
 
 # In[15]:
 
 
-rating_df_for_one_user.drop(columns=['rating','userId'], axis=1)
+HC_cluster_user(mergings, 12.5)
 
 
 # In[ ]:

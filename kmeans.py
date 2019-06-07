@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from dataset import generate_user_avg_rating_df
 
-def KMeans_SSE_Graphic(X,Max_K):
+def KMeans_SSE_Graphic(X, Max_K, dataName):
     # Performs K = 1 to 50 for clustering the data
     Ks = range(1,Max_K)
     # Array for saving inertias values for each K Clustering
@@ -30,7 +30,7 @@ def KMeans_SSE_Graphic(X,Max_K):
     # Plot inertias values vs K numbers 
     plt.ylabel("SSE")
     plt.xlabel("Numbers of K")
-    plt.title("K-Means Algorithm on Clustering Movies")
+    plt.title("K-Means Algorithm on Clustering " + dataName)
     plt.plot(Ks,sse,'-o')
 
 def KMeans_Cluster(df,X,K,fileName):

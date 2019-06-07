@@ -18,11 +18,10 @@ def draw_user_dendrogram():
     mergings = linkage(X, method='complete')
 
     print("Drawing User Dendrogram ...")
-    dendrogram(
-        mergings,
-        labels = range(0,611),
-    )
-
+    dendrogram( mergings, labels = range(0,611))
+    plt.title("Hierarchy Clustering - User Dendrogram")
+    plt.ylabel("Height")
+    plt.xlabel("User ID")
     plt.show()
 
     return mergings
