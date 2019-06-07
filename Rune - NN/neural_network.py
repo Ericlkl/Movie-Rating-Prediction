@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import keras
 
+import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
 
@@ -46,67 +48,53 @@ def build_NeuralNetwork_classifier(X_training, y_training, X_test, y_test):
 
     model = generate_model()
     model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+    # batch_size = 1 because we have such a small sample size to work with
     model.fit(X_training, y_training, batch_size=1, epochs=20, verbose=0)
-    score = [model.evaluate(X_test, y_test, verbose=0), model.evaluate(X_training, y_training, verbose=0)]
+    # scores = [result on test data, result on training data,
+    #           size of user data, size of training data]
+    score = ([model.evaluate(X_test, y_test, verbose=0),
+        model.evaluate(X_training, y_training, verbose=0),
+        len(X_test),
+        len(X_training)])
 
     return score
 
-    # clf = KerasClassifier(model, verbose=0)
-    # epochs = [10,50,100] # Amount of iterations over each traning set
-    # batch_size = [1,2] # Different training sample sizes
-    # optimizer = ['adam', 'sdg', 'rmsprop']
-    # param_grid = dict(batch_size=batch_size, epochs=epochs, optimizer=optimizer)
-    # grid = GridSearchCV(estimator=clf, param_grid=param_grid, n_jobs=-1)
-    #
-    # grid_result = grid.fit(X_training, y_training) # Training the classifier
-    #
-    # print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
-    # means = grid_result.cv_results_['mean_test_score']
-    # stds = grid_result.cv_results_['std_test_score']
-    # params = grid_result.cv_results_['params']
-    # for mean, stdev, param in zip(means, stds, params):
-    #     print("%f (%f) with: %r" % (mean, stdev, param))
-
-
-
-
-
-def calculate_scores(scores):
+'''
+Outputs a list of
+'''
+def calculate_scores(scores, data_list):
+    scores = np.array(scores)
     sum_training_loss = 0
     sum_training_accuracy = 0
     sum_test_loss = 0
     sum_test_accuracy = 0
-    best_training_accuracy = 0
-    best_test_accuracy = 0
-
-    for score in scores:
-        if score[0][1] > best_training_accuracy:
-            best_training_accuracy = score[0][1]
-        if score[1][1] > best_test_accuracy:
-            best_test_accuracy = score[1][1]
-
-        sum_training_loss += score[0][0]
-        sum_training_accuracy += score[0][1]
-        sum_test_loss += score[1][0]
-        sum_test_accuracy += score[1][1]
-
     score_size = len(scores)
-    print('Best test accuracy = ', best_test_accuracy)
-    print('Best training accuracy = ', best_training_accuracy)
+
+    for i in range(len(scores)):
+        sum_test_loss += scores[i][0][0]
+        sum_test_accuracy += scores[i][0][1]
+        sum_training_loss += scores[i][1][0]
+        sum_training_accuracy += scores[i][1][1]
+
+
+    plt.plot(scores[:,[2]], scores[:, [1]])
+    plt.show()
+
+    print('Running training on 20% of the user\'s registered ratings')
     print('Average training loss = ', sum_training_loss/score_size)
     print('Average training accuracy = ', sum_training_accuracy/score_size)
     print('Average test loss = ', sum_test_loss/score_size)
     print('Average test accuracy = ', sum_test_accuracy/score_size)
-    print(score[0])
+    print(scores[:,[2]])
 
 
 if __name__ == "__main__":
-
 
     data = np.array(pd.read_csv('extracted_data.csv'))
 
     user_list = []
     data_list = []
+    # this for loop seperates each user.
     for entry in data:
         if entry[0] not in user_list:
             user_list.append(entry[0])
@@ -115,17 +103,18 @@ if __name__ == "__main__":
     user_list = np.array(user_list)
     data_list = np.array(data_list)
     scores = []
-    for i in range(len(data_list)-500):
+    # training and finding results for each user
+    for i in range(len(data_list)-605):
         X_training_user = np.array(data_list[i])
         y_training_user = X_training_user[:,[len(X_training_user[0])-1]]
 
-        X_training, X_test, y_training, y_test = train_test_split(X_training_user[:,:-1], y_training_user , test_size=0.10)
+        X_training, X_test, y_training, y_test = train_test_split(X_training_user[:,:-1], y_training_user , test_size=0.15)
 
         y_training = error_test_ratings(y_training)
         y_test = error_test_ratings(y_test)
         scores.append(build_NeuralNetwork_classifier(X_training, y_training, X_test, y_test))
 
-    calculate_scores(scores)
+    calculate_scores(scores, data_list)
 
 
 
