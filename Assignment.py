@@ -88,6 +88,9 @@ y = full_rating_dataset.loc[:,'rating'].astype(str).values
 Random_Forest_Prediction(X,y,100)
 
 
+# ## Neural Network
+# ### Neural Network is used to predict the user rating, please check neural_network.py which is saved in Rune - NN folder
+
 # ## Naive Bayes Gaussian Models
 
 # In[8]:
@@ -161,8 +164,6 @@ X = generate_user_avg_rating_df().iloc[:,1:].values
 
 KMeans_SSE_Graphic(X,50,"Users")
 
-
-# ## From the Grpah above, We can see that the dramatic decrease stop around cluster = 14, So we use 14 to cluster the user group
 
 # In[15]:
 
