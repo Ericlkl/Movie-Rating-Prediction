@@ -69,15 +69,51 @@ def calculate_scores(scores, data_list):
     sum_test_loss = 0
     sum_test_accuracy = 0
     score_size = len(scores)
+    
+    training_loss = []
+    training_accuracy = []
+    test_loss = []
+    test_accuracy = []
 
     for i in range(len(scores)):
         sum_test_loss += scores[i][0][0]
         sum_test_accuracy += scores[i][0][1]
         sum_training_loss += scores[i][1][0]
         sum_training_accuracy += scores[i][1][1]
-
-
-    plt.plot(scores[:,[2]], scores[:, [1]])
+       # k_scores.append(scores[i][0][1]) #mean of 10 fold result
+        training_loss.append(scores[i][0][1])
+        training_accuracy.append(scores[i][0][1])
+        test_loss.append(scores[i][0][1])
+        test_accuracy.append(scores[i][0][1])
+        
+    #plt.plot(scores[:,[2]], scores[:, [1]])
+    
+    plt.plot(scores[:,[2]], training_loss, 'ro')
+    plt.ylabel('Training Loss')
+    plt.xlabel('Users')
+    plt.title("Training Loss")
+    plt.savefig('foo5.png', bbox_inches='tight')
+    plt.show()
+    
+    plt.plot(scores[:,[2]], training_accuracy, 'ro')
+    plt.ylabel('Training Accuracy')
+    plt.xlabel('Users')
+    plt.title("Training Accuracy")
+    plt.savefig('foo6.png', bbox_inches='tight')
+    plt.show()
+    
+    plt.plot(scores[:,[2]], test_loss, 'ro')
+    plt.ylabel('Test Loss')
+    plt.xlabel('Users')
+    plt.title("Test Loss")
+    plt.savefig('foo7.png', bbox_inches='tight')
+    plt.show()
+    
+    plt.plot(scores[:,[2]], test_accuracy, 'ro')
+    plt.ylabel('Test Accuracy')
+    plt.xlabel('Users')
+    plt.title("Test Accuracy")
+    plt.savefig('foo8.png', bbox_inches='tight')
     plt.show()
 
     print('Running training on 20% of the user\'s registered ratings')
@@ -85,7 +121,6 @@ def calculate_scores(scores, data_list):
     print('Average training accuracy = ', sum_training_accuracy/score_size)
     print('Average test loss = ', sum_test_loss/score_size)
     print('Average test accuracy = ', sum_test_accuracy/score_size)
-    print(scores[:,[2]])
 
 
 if __name__ == "__main__":
