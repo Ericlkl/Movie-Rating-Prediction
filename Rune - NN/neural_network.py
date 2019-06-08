@@ -4,6 +4,7 @@ import pandas as pd
 import keras
 
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
@@ -12,6 +13,8 @@ from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Input, Embedding
 from keras.wrappers.scikit_learn import KerasRegressor, KerasClassifier
 
+'''
+'''
 def get_user_array(data, user):
     data_list = []
 
@@ -50,75 +53,63 @@ def build_NeuralNetwork_classifier(X_training, y_training, X_test, y_test):
     model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
     # batch_size = 1 because we have such a small sample size to work with
     model.fit(X_training, y_training, batch_size=1, epochs=20, verbose=0)
-    # scores = [result on test data, result on training data,
-    #           size of user data, size of training data]
-    score = ([model.evaluate(X_test, y_test, verbose=0),
-        model.evaluate(X_training, y_training, verbose=0),
-        len(X_test),
-        len(X_training)])
+    # scores = [result on test data, size of user data]
+    score = [model.evaluate(X_test, y_test, verbose=0), len(X_test)]
 
     return score
 
 '''
-Outputs a list of
+Creates a graph based on the output from our neural networks
+@param scores: An array of [accuracy, mse] from the neural networks tested
+@param data_list:
 '''
-def calculate_scores(scores, data_list):
+def calculate_scores(scores):
     scores = np.array(scores)
-    sum_training_loss = 0
-    sum_training_accuracy = 0
     sum_test_loss = 0
     sum_test_accuracy = 0
     score_size = len(scores)
-    
-    training_loss = []
-    training_accuracy = []
+
     test_loss = []
     test_accuracy = []
+    test_sizes = []
 
     for i in range(len(scores)):
         sum_test_loss += scores[i][0][0]
         sum_test_accuracy += scores[i][0][1]
-        sum_training_loss += scores[i][1][0]
-        sum_training_accuracy += scores[i][1][1]
        # k_scores.append(scores[i][0][1]) #mean of 10 fold result
-        training_loss.append(scores[i][0][1])
-        training_accuracy.append(scores[i][0][1])
-        test_loss.append(scores[i][0][1])
-        test_accuracy.append(scores[i][0][1])
-        
-    #plt.plot(scores[:,[2]], scores[:, [1]])
-    
-    plt.plot(scores[:,[2]], training_loss, 'ro')
-    plt.ylabel('Training Loss')
-    plt.xlabel('Users')
-    plt.title("Training Loss")
+        test_loss.append(scores[i][0][0])
+        test_accuracy.append(scores[i][0][1]*100) # in percent
+        test_sizes.append(scores[i][1])
+
+    linear_regressor = LinearRegression()  # create object for the class
+    X = np.array(test_sizes).reshape(-1,1)
+    Y = np.array(test_loss).reshape(-1,1)
+    linear_regressor.fit(X, Y)  # perform linear regression
+    Y_pred = linear_regressor.predict(X)  # make predictions
+
+    plt.scatter(X, Y)
+    plt.plot(X, Y_pred, color='red')
+    plt.ylabel('Test mse')
+    plt.xlabel('Data size')
+    plt.title('Mean squared error')
     plt.savefig('foo5.png', bbox_inches='tight')
     plt.show()
-    
-    plt.plot(scores[:,[2]], training_accuracy, 'ro')
-    plt.ylabel('Training Accuracy')
-    plt.xlabel('Users')
-    plt.title("Training Accuracy")
+
+    linear_regressor = LinearRegression()
+    X = np.array(test_sizes).reshape(-1,1)
+    Y = np.array(test_accuracy).reshape(-1,1)
+    linear_regressor.fit(X, Y)  # perform linear regression
+    Y_pred = linear_regressor.predict(X)  # make predictions
+
+    plt.scatter(X, Y)
+    plt.plot(X, Y_pred, color='red')
+    plt.ylabel('Test Accuracy in %')
+    plt.xlabel('Test data size')
+    plt.title('Test Accuracy')
     plt.savefig('foo6.png', bbox_inches='tight')
     plt.show()
-    
-    plt.plot(scores[:,[2]], test_loss, 'ro')
-    plt.ylabel('Test Loss')
-    plt.xlabel('Users')
-    plt.title("Test Loss")
-    plt.savefig('foo7.png', bbox_inches='tight')
-    plt.show()
-    
-    plt.plot(scores[:,[2]], test_accuracy, 'ro')
-    plt.ylabel('Test Accuracy')
-    plt.xlabel('Users')
-    plt.title("Test Accuracy")
-    plt.savefig('foo8.png', bbox_inches='tight')
-    plt.show()
 
-    print('Running training on 20% of the user\'s registered ratings')
-    print('Average training loss = ', sum_training_loss/score_size)
-    print('Average training accuracy = ', sum_training_accuracy/score_size)
+    print('Running training on 15% of the user\'s registered ratings')
     print('Average test loss = ', sum_test_loss/score_size)
     print('Average test accuracy = ', sum_test_accuracy/score_size)
 
@@ -139,7 +130,7 @@ if __name__ == "__main__":
     data_list = np.array(data_list)
     scores = []
     # training and finding results for each user
-    for i in range(len(data_list)-605):
+    for i in range(len(data_list)):
         X_training_user = np.array(data_list[i])
         y_training_user = X_training_user[:,[len(X_training_user[0])-1]]
 
@@ -148,33 +139,6 @@ if __name__ == "__main__":
         y_training = error_test_ratings(y_training)
         y_test = error_test_ratings(y_test)
         scores.append(build_NeuralNetwork_classifier(X_training, y_training, X_test, y_test))
+        print('Finished user number : ', (i+1))
 
-    calculate_scores(scores, data_list)
-
-
-
-    '''
-    AVERAGE NUMBER OF RATINGS PR USER
-
-    print(user_list[:5])
-    sum = 0
-    for x in data_list:
-        sum += len(x)
-    print((sum/len(data_list)))
-    '''
-
-    # X_training, X_test, y_training, y_test = train_test_split(data[:, 1:-1], data[:, [len(data[0])-1]], test_size=0.10)
-    #
-    # y_training = error_test_ratings(y_training)
-    # y_test = error_test_ratings(y_test)
-    #
-    # build_NeuralNetwork_classifier(X_training, y_training, X_test, y_test)
-
-
-
-    #print(data[0:5])
-    #data, test_rating = fetch_data('extracted_data.csv')
-
-    #nb.compute(train_input, train_output, X_test, y_test)
-    #build_NeuralNetwork_classifier(train_input, train_output, X_test, y_test)
-    # user = User(len(train_input[0]))
+    calculate_scores(scores)
